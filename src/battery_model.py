@@ -79,7 +79,7 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
     model.Rmax = Param(initialize=100,
                        doc='Max rate of power flow (kW) in or out')
     model.Smax = Param(initialize=200, doc='Max storage (kWh)')
-    model.Dmax = Param(initialize=200, doc='Max discharge in 24 hour period')
+    model.Dmax = Param(initialize=500, doc='Max discharge in 24 hour period')
     model.P = Param(initialize=df.lbmp.tolist(), doc='LBMP for each hour')
     eta = 0.85 # Round trip storage efficiency
 
@@ -104,7 +104,7 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
     model.charge_state = Constraint(model.T, rule=storage_state)
 
     def discharge_constraint(model, t):
-        "Maximum dischage within a single hour"
+        "Maximum discharge within a single hour"
         return model.Eout[t] <= model.Rmax
 
     model.discharge = Constraint(model.T, rule=discharge_constraint)

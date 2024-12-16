@@ -49,15 +49,15 @@ def read_all_nyc(data_path):
     return df
 
 
-def read_entsoe_2023(data_path)
-    
-        """
-    Entsoe Day-Ahead EPEX prices of NL in whole year 2023 - hourly values
+def read_entsoe_2023(data_path):
+    """
+    Reads and combines individual LBMP data files.
     
     Parameters
     ----------
     data_path : Path object
-        This is a pathlib Path object pointing to the data folder with .csv files.
+        This is a pathlib Path object pointing to the LBMP data folder with
+        .csv files.
     
     Returns
     -------
@@ -71,5 +71,15 @@ def read_entsoe_2023(data_path)
     df.sort_values('time_stamp', inplace=True)
     df.reset_index(inplace=True, drop=True)
     df['hour'] = df.index
+
+
+    import pytz
+
+    # Ensure 'time_stamp' is in datetime format, and if it's timezone-aware, convert it to UTC first
+    df['time_stamp'] = pd.to_datetime(df['time_stamp'], utc=True)
+
+    # Convert to Amsterdam timezone
+    amsterdam_tz = pytz.timezone('Europe/Amsterdam')
+    df['time_stamp'] = df['time_stamp'].dt.tz_convert(amsterdam_tz)
 
     return df

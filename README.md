@@ -1,5 +1,7 @@
 # Modeling battery dispatch behavior
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gschivley/battery_model/master)
+# %%
+
 
 This is a sample project modeling battery storage and dispatch behavior in the NYISO market. The goal is to understand how the example system might perform, the scale of expected profits, and how those profits might vary across the year.
 
