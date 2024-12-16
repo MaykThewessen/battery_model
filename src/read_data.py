@@ -19,7 +19,7 @@ def read_filter_lbmp(path):
     """
    
     df = pd.read_csv(path, parse_dates=['Time Stamp'])
-    df = df.loc[df.Name == 'N.Y.C.', ['Time Stamp', 'Name', 'LBMP ($/MWHr)']]
+    df = df.loc[df.Name == 'NL', ['Time Stamp', 'Name', 'DA (€/MWh)']]
     df.columns = ['time_stamp', 'name', 'lbmp']
     return df
 
@@ -32,6 +32,32 @@ def read_all_nyc(data_path):
     data_path : Path object
         This is a pathlib Path object pointing to the LBMP data folder with
         .csv files.
+    
+    Returns
+    -------
+    DataFrame
+        df with 4 columns (time stamp, name of node, LBMP, hour of year)
+    """
+
+    fnames = data_path.glob('**/*.csv')
+    dfs = [read_filter_lbmp(name) for name in fnames]
+    df = pd.concat(dfs)
+    df.sort_values('time_stamp', inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    df['hour'] = df.index
+
+    return df
+
+
+def read_entsoe_2023(data_path)
+    
+        """
+    Entsoe Day-Ahead EPEX prices of NL in whole year 2023 - hourly values
+    
+    Parameters
+    ----------
+    data_path : Path object
+        This is a pathlib Path object pointing to the data folder with .csv files.
     
     Returns
     -------
