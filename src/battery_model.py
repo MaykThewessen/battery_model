@@ -105,7 +105,7 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
 
     def discharge_constraint(model, t):
         "Maximum discharge within a single hour"
-        return model.Eout[t] <= model.Rmax
+        return model.Eout[t] <= min(model.Rmax, model.S[t])
 
     model.discharge = Constraint(model.T, rule=discharge_constraint)
 
