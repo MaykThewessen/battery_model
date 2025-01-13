@@ -3,10 +3,16 @@ import pytz
 
 def read_all_NL():
 
-    df = pd.read_csv('Entsoe_prices_2023/outfile_DA_2023_Jan_Dec.csv', parse_dates=['time_stamp'])
-    df.columns = ['time_stamp', 'lbmp']
+    #df1 = pd.read_csv('Entsoe_prices_NL/outfile_imb_15min_NL_20240101_to_20241220_reg2.csv', parse_dates=['time_stamp'])
+    df1 = pd.read_csv('Entsoe_prices_NL/outfile_imb_15min_NL_20230101_to_20240101_reg2.csv', parse_dates=['time_stamp'])
 
+    
+
+    df = df1.iloc[:, :2]
+    df.columns = ['time_stamp', 'lbmp']
+    
     # df = pd.concat(dfs)
+    
     df.sort_values('time_stamp', inplace=True)
     df.reset_index(inplace=True, drop=True)
     df['hour'] = df.index

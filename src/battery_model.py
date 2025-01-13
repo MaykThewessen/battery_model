@@ -45,7 +45,7 @@ def model_to_df(model, first_hour, last_hour):
 
     return df
 
-def optimize_year(df, first_model_hour=0, last_model_hour=8759):
+def optimize_year(df, first_model_hour, last_model_hour):
     """
     Optimize the charge/discharge behavior of a battery storage unit over a
     full year. Assume perfect foresight of electricity prices. The battery
@@ -70,16 +70,17 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
     """
 
     #Filter the data
-    df = df.loc[first_model_hour:last_model_hour, :]
+    #df = df.loc[first_model_hour:last_model_hour, :]
 
     model = ConcreteModel()
 
     # Define model parameters
-    model.T = Set(doc='hour of year', initialize=df.hour.tolist(), ordered=True)
-    model.Rmax = Param(initialize=100,
-                       doc='Max rate of power flow (kW) in or out')
-    model.Smax = Param(initialize=200, doc='Max storage (kWh)')
-    model.Dmax = Param(initialize=500, doc='Max discharge in 24 hour period')
+    #model.T = Set(doc='hour of year', initialize=df.hour.tolist(), ordered=True)
+    model.T = Set(doc='15-minute intervals of the year', initialize=range(first_model_hour, last_model_hour + 1), ordered=True)
+    model.Rmax = Param(initialize=200* 15/60,
+                       doc='Max rate of power flow (kW) in or out') # set max charge/discharge power to 100kW and divide by 15/60 to get 15 minute max energy charge or discharge
+    model.Smax = Param(initialize=400, doc='Max storage (kWh)')
+    model.Dmax = Param(initialize= 2.0 * model.Smax * 48/24, doc='Max discharge in 48 hours') # now set to 2 cycles per day avg, hard limit on 4 cycles per 2 days
     model.P = Param(initialize=df.lbmp.tolist(), doc='LBMP for each hour')
     eta = 0.85 # Round trip storage efficiency
 
@@ -104,8 +105,8 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
     model.charge_state = Constraint(model.T, rule=storage_state)
 
     def discharge_constraint(model, t):
-        "Maximum discharge within a single hour"
-        return model.Eout[t] <= min(model.Rmax, model.S[t])
+        "Maximum dischage within a single hour"
+        return model.Eout[t] <= model.Rmax
 
     model.discharge = Constraint(model.T, rule=discharge_constraint)
 
@@ -123,14 +124,15 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
     model.positive_charge = Constraint(model.T, rule=positive_charge)
 
     def discharge_limit(model, t):
-        "Limit on discharge within a 24 hour period"
+        "Limit on discharge within a x-hour period"
         max_t = model.T.last()
 
-        # Check all t until the last 24 hours
-        # No need to check with < 24 hours remaining because the constraint is
+        # Check all t until the last 48 hours
+        # No need to check with < 48 hours remaining because the constraint is
+        # changed to limit to 48*4 = 196 time steps of 15min adds up to 24 hours
         # already in place for a larger number of hours
-        if t < max_t - 24:
-            return sum(model.Eout[i] for i in range(t, t+24)) <= model.Dmax
+        if t < max_t - 196:
+            return sum(model.Eout[i] for i in range(t, t+196)) <= model.Dmax
         else:
             return Constraint.Skip
 
@@ -146,8 +148,7 @@ def optimize_year(df, first_model_hour=0, last_model_hour=8759):
     solver = SolverFactory('glpk')
     solver.solve(model)
 
-    results_df = model_to_df(model, first_hour=first_model_hour,
-                             last_hour=last_model_hour)
+    results_df = model_to_df(model, first_hour=first_model_hour,last_hour=last_model_hour)
     results_df['time_stamp'] = df.loc[:, 'time_stamp']
 
     return results_df
